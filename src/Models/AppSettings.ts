@@ -5,8 +5,8 @@ export class AppSettingsModel {
 
   public showInfoBar = false;
   public autoPaging = true;
-  public duplicateAvoidMode = false;
-  public includeFilenameAsComment = false;
+  public duplicateAvoidMode = true;
+  public includeFilenameAsComment = true;
 }
 
 export function saveSettingsToLocalStorage(context: AppSettingsModel) {
