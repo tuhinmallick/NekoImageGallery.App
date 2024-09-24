@@ -1,13 +1,17 @@
-import axios, {AxiosInstance} from 'axios';
-import {Environment} from '../environment';
-import {loadFromLocalStorage} from '../Models/AppSettings';
+import axios, { AxiosInstance } from 'axios';
+import { Environment } from '../environment';
+import { loadFromLocalStorage } from '../Models/AppSettings';
 
 let apiClient: AxiosInstance | null;
 
 export function getClient() {
   if (!apiClient) {
-    const token = localStorage.getItem('access-token');
-    const adminToken = loadFromLocalStorage().adminKey;
+    // Load the tokens from AppSettings
+    const appSettings = loadFromLocalStorage();
+    const token = appSettings.accessToken; // Access token from AppSettings
+    const adminToken = appSettings.adminKey; // Admin token from AppSettings
+
+    // Create axios instance with the tokens
     apiClient = axios.create({
       baseURL: Environment.ApiUrl,
       headers: {

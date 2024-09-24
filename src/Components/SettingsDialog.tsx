@@ -10,14 +10,15 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { AppSettings, ApiInfo } from './Contexts';
-import { useContext, useState } from 'react';
-import { resetClient } from '../Services/Base';
-import { WelcomeApi } from '../Services/WelcomeApi';
-import { LoadingButton } from '@mui/lab';
-import { LabelledSwitch } from './LabelledSwitch';
+import {AppSettings, ApiInfo} from './Contexts';
+import {useContext, useState} from 'react';
+import {resetClient} from '../Services/Base';
+import {WelcomeApi} from '../Services/WelcomeApi';
+import {LoadingButton} from '@mui/lab';
+import {LabelledSwitch} from './LabelledSwitch';
+import {saveSettingsToLocalStorage} from '../Models/AppSettings'; // Import this function
 
-export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function SettingsDialog({open, onClose}: {open: boolean; onClose: () => void}) {
   const [prevOpen, setPrevOpen] = useState(false);
   const [appSettings, setAppSettings] = useContext(AppSettings);
   const apiInfo = useContext(ApiInfo);
@@ -34,25 +35,27 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
 
   const adminPortalAvail = apiInfo?.admin_api.available ?? true;
   if (!adminPortalAvail && editingSettings.useAdminPortal) {
-    setEditingSettings({ ...editingSettings, useAdminPortal: false });
+    setEditingSettings({...editingSettings, useAdminPortal: false});
   }
 
   function saveSettings() {
     setAppSettings(editingSettings);
 
-    // Save the access token to localStorage when saving the settings
-    if (editingSettings.adminKey) {
-      localStorage.setItem('access-token', editingSettings.adminKey); // Save the token
-    }
+    // Save access token and admin token to localStorage
+    localStorage.setItem('access-token', editingSettings.accessToken);
+    localStorage.setItem('admin-token', editingSettings.adminKey);
+
+    // Save all settings to localStorage
+    saveSettingsToLocalStorage(editingSettings);
 
     if (editingSettings.useAdminPortal) {
       setSaving(true);
-      resetClient(); // Reset the client to apply the new token
+      resetClient();
       WelcomeApi()
-        .then((resp) => {
+        .then(resp => {
           if (resp.admin_api.passed) {
             setTokenErr('');
-            onClose(); // Close the dialog if successful
+            onClose();
           } else {
             setTokenErr('Invalid token.');
           }
@@ -64,22 +67,22 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
           setSaving(false);
         });
     } else {
-      onClose(); // Close the dialog if not using the admin portal
+      onClose();
     }
   }
 
   const canSave = !editingSettings.useAdminPortal || editingSettings.adminKey;
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth scroll="paper">
+    <Dialog open={open} onClose={onClose} maxWidth='md' fullWidth scroll='paper'>
       <DialogTitle>Settings</DialogTitle>
       <DialogContent dividers>
-        <Typography variant="h6">Appearance</Typography>
+        <Typography variant='h6'>Appearance</Typography>
         <LabelledSwitch
-          label="Show info bar on each image"
-          sx={{ width: '100%' }}
+          label='Show info bar on each image'
+          sx={{width: '100%'}}
           checked={editingSettings.showInfoBar}
-          onCheckedChange={(e) =>
+          onCheckedChange={e =>
             setEditingSettings({
               ...editingSettings,
               showInfoBar: e,
@@ -87,22 +90,38 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
           }
         />
         <LabelledSwitch
-          label="Auto load more images when scrolling to the end"
-          sx={{ width: '100%' }}
+          label='Auto load more images when scrolling to the end'
+          sx={{width: '100%'}}
           checked={editingSettings.autoPaging}
-          onCheckedChange={(e) =>
+          onCheckedChange={e =>
             setEditingSettings({
               ...editingSettings,
               autoPaging: e,
             })
           }
         />
-        <Typography variant="h6">Admin</Typography>
+        <Typography variant='h6'>Access Token</Typography>
+        <TextField
+          label='Access Token'
+          variant='standard'
+          fullWidth
+          value={editingSettings.accessToken}
+          type='password'
+          error={!!tokenErr}
+          helperText={tokenErr}
+          onChange={e =>
+            setEditingSettings({
+              ...editingSettings,
+              accessToken: e.target.value,
+            })
+          }
+        />
+        <Typography variant='h6'>Admin</Typography>
         <LabelledSwitch
-          label="Use admin portal"
+          label='Use admin portal'
           disabled={!adminPortalAvail}
           checked={editingSettings.useAdminPortal}
-          onCheckedChange={(e) =>
+          onCheckedChange={e =>
             setEditingSettings({
               ...editingSettings,
               useAdminPortal: e,
@@ -112,27 +131,27 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
         {adminPortalAvail ? (
           <Collapse in={editingSettings.useAdminPortal}>
             <TextField
-              label="Admin Token"
-              variant="standard"
+              label='Admin Token'
+              variant='standard'
               fullWidth
               required
               value={editingSettings.adminKey}
-              type="password"
+              type='password'
               error={!!tokenErr}
               helperText={tokenErr}
-              onChange={(e) =>
+              onChange={e =>
                 setEditingSettings({
                   ...editingSettings,
                   adminKey: e.target.value,
                 })
               }
             />
-            <Tooltip title="[Alpha] When enabled, this option checks if an image already exists on the server by its SHA-1 digest before uploading. This can save time and reduce network traffic for potentially duplicate images. Duplicate images are always rejected by the server, even if this option is not enabled.">
+            <Tooltip title='[Alpha] When enabled, this option checks if an image already exists on the server by its SHA-1 digest before uploading. This can save time and reduce network traffic for potentially duplicate images. Duplicate images are always rejected by the server, even if this option is not enabled.'>
               <LabelledSwitch
-                label="Check for Duplicate Images Before Upload"
-                sx={{ width: '100%' }}
+                label='Check for Duplicate Images Before Upload'
+                sx={{width: '100%'}}
                 checked={editingSettings.duplicateAvoidMode}
-                onCheckedChange={(e) =>
+                onCheckedChange={e =>
                   setEditingSettings({
                     ...editingSettings,
                     duplicateAvoidMode: e,
@@ -140,12 +159,12 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
                 }
               />
             </Tooltip>
-            <Tooltip title="This will include the name (and the relative path if using add directory) of the uploaded file as a comment. Comments are accessible for all users with access to the server. This might help containing extra context for the image.">
+            <Tooltip title='This will include the name (and the relative path if using add directory) of the uploaded file as a comment. Comments are accessible for all users with access to the server. This might help containing extra context for the image.'>
               <LabelledSwitch
-                label="Upload file name as file comment"
-                sx={{ width: '100%' }}
+                label='Upload file name as file comment'
+                sx={{width: '100%'}}
                 checked={editingSettings.includeFilenameAsComment}
-                onCheckedChange={(e) =>
+                onCheckedChange={e =>
                   setEditingSettings({
                     ...editingSettings,
                     includeFilenameAsComment: e,
@@ -155,11 +174,11 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
             </Tooltip>
           </Collapse>
         ) : (
-          <Alert severity="info">The admin portal of this server isn't enabled.</Alert>
+          <Alert severity='info'>The admin portal of this server isn&apos;t enabled.</Alert>
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} color="secondary">
+        <Button onClick={onClose} color='secondary'>
           Cancel
         </Button>
         <LoadingButton onClick={saveSettings} disabled={!canSave} loading={saving}>

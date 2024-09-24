@@ -1,8 +1,9 @@
 export class AppSettingsModel {
   public useFilter = false;
   public useAdminPortal = false;
-  public adminKey = 'test';
-
+  public adminKey = ''; // Admin token
+  public accessToken = ''; // Access token
+  
   public showInfoBar = false;
   public autoPaging = true;
   public duplicateAvoidMode = true;
