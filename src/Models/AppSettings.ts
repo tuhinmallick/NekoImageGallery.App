@@ -1,7 +1,7 @@
 export class AppSettingsModel {
   public useFilter = false;
   public useAdminPortal = false;
-  public adminKey = '';
+  public adminKey = 'test';
 
   public showInfoBar = false;
   public autoPaging = true;
